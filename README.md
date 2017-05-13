@@ -1,2 +1,2 @@
 # tail
-This is my labo4 at the SPO.
+This is my lab 4 at the SPO.
