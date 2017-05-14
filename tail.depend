@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1494739291 source:/home/stud/Desktop/SPO/lab_c/tail/main.c
+	<stdio.h>
+	<stdlib.h>
+	<sys/fcntl.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<unistd.h>
+	<errno.h>
+	"err_message.h"
+
+1494699727 /home/stud/Desktop/SPO/lab_c/tail/err_message.h
+
