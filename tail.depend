@@ -1,10 +1,11 @@
 # depslib dependency file v1.0
-1494739291 source:/home/stud/Desktop/SPO/lab_c/tail/main.c
+1494757804 source:/home/stud/Desktop/SPO/lab_c/tail/main.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/fcntl.h>
 	<sys/types.h>
 	<sys/stat.h>
+	<sys/mman.h>
 	<unistd.h>
 	<errno.h>
 	"err_message.h"

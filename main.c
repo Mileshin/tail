@@ -4,6 +4,7 @@
 #include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 
 #include <unistd.h>
 #include <errno.h>
@@ -12,7 +13,7 @@
 
 #define LENGTH_BUFFER 1024
 #define number_row 10
-
+#define SIZE_T_MAX (~(size_t)0)
 
 #define get_arg(units,type){                             \
     if (globalArgs.style != 0){                                     \
@@ -24,9 +25,7 @@
         err(1,"illegal offset -- %s",optarg);       \
     switch(optarg[0]) {                             \
         case '+':                                   \
-            if (globalArgs.N)                       \
-                globalArgs.N -= (units);              \
-                globalArgs.style = (type);                  \
+            globalArgs.style = (type);                  \
             break;                                  \
         case '-':                                   \
             globalArgs.N=-globalArgs.N;             \
@@ -56,15 +55,16 @@ static const char *missedname ="Missing namefile";
 
 
 char *buf[LENGTH_BUFFER];
+char *ch[1];
 int len_buf;
-
+char* fname;
 
 
 
 int main(int argc, char** argv)
 {
     /*Take argument*/
-    char* fname = argv[1];
+    fname = argv[1];
     int file_des;
     int opt;
     char* e;
@@ -124,6 +124,11 @@ int main(int argc, char** argv)
     }
     argc-=optind;
     argv +=optind;
+    if(globalArgs.style==0){
+        globalArgs.style=-'l';
+        globalArgs.N=10;
+    }
+
 
     if(*argv){
         for(;fname = *argv++;){
@@ -155,12 +160,31 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void print_tail(int fd){
+#define readchar(fd, b, n){     \
+    int e;                      \
+    e = read(fd,b,n);           \
+    if(!(e>0)){                 \
+        errno=EXIT_FAILURE;     \
+        perror("Read error");   \
+        return;                 \
+    }                           \
+}
 
+#define writechar(b,n){         \
+    int e;                      \
+    e = write(1,b,n);           \
+    if(e<0){                    \
+        errno=EXIT_FAILURE;     \
+        perror("Write error");  \
+        return;                 \
+    }                           \
+}
+
+void print_tail(int fd){
+    if (globalArgs.N==0)
+            return;
     switch(globalArgs.style) {
     case 'b':
-        if (globalArgs.N==0)
-            break;
         /*Check that the file is regular*/
         if (S_ISREG(sb.st_mode)) {
             /*if the file size is less than N, then print a fully.*/
@@ -175,35 +199,96 @@ void print_tail(int fd){
         }
         break;
     case (-'b'):
-        printf("-b");
+        /*Check that the file is regular*/
+        if (S_ISREG(sb.st_mode)) {
+            /*if the file size is less than N, then print a fully.*/
+            if (sb.st_size < globalArgs.N)
+                globalArgs.N = sb.st_size;
+
+            if (lseek(fd,-globalArgs.N,SEEK_END)==-1){
+                errno=EXIT_FAILURE;
+                perror("Read error");
+                return;
+            }
+        }
         break;
     case 'l':
-        printf("l");
+        {
+        int newN=0;
+        for (;;){
+            readchar(fd,ch,1);
+            if (ch[0]==EOF)
+                break;
+             else {
+                newN++;
+                if(ch[0] == '\n' && !--globalArgs.N){
+                    break;
+                }
+            }
+        }
+        globalArgs.N=newN;
+        }
+
+        if (lseek(fd,0,SEEK_SET)==-1){
+                errno=EXIT_FAILURE;
+                perror("Read error");
+                return;
+        }
         break;
     case (-'l'):
-        printf("-l");
+
+
+        /*Check that the file is regular*/
+        if (S_ISREG(sb.st_mode)) {
+            register off_t size = sb.st_size;
+            register char *p;
+            void *start;
+        /*Check file size*/
+        fflush(stdout);
+            if(size > SIZE_T_MAX){
+                err(0,"%s: %s",fname, strerror(EFBIG));
+                return;
+            }
+            if ((start = mmap(NULL,(size_t)size,PROT_READ,MAP_PRIVATE,fd,(off_t)0)) == MAP_FAILED){
+                 err(0,"%s: %s",fname, strerror(errno));
+                return;
+            }
+            for (p=start+size-1;size--;){
+                if(*--p == '\n' && !--globalArgs.N){
+                    ++p;
+                    break;
+                }
+                if(size-1==0)
+                    break;
+                }
+            size =  sb.st_size -size;
+            if(write(1,p,size) !=size)
+                perror("Write error");
+            if (munmap(start, (size_t)sb.st_size)) {
+                            err(0, "%s: %s", fname, strerror(errno));
+                return;
+            }
+            return;
+
+        }
+
+       printf("-l");
+
         break;
     }
+    /*Print byte*/
+   // if(globalArgs.style == 'b' ||
+   // globalArgs.style == -'b'){
+        while(globalArgs.N>0){
+            int N = LENGTH_BUFFER;
 
-    while(globalArgs.N>0){
-        int N = LENGTH_BUFFER;
-        int e;
-        if(globalArgs.N < LENGTH_BUFFER){
-            N = globalArgs.N;
+            if(globalArgs.N < LENGTH_BUFFER){
+                N = globalArgs.N;
+            }
+            readchar(fd,buf,N);
+            writechar(buf,N)
+            globalArgs.N-=N;
         }
-        e = read(fd,buf,N);
-        if(!(e>0)){
-            errno=EXIT_FAILURE;
-            perror("Read error");
-            return;
-        }
-        e = write(1,buf,N);
-        if(e<0){
-            errno=EXIT_FAILURE;
-            perror("Write error");
-            return;
-        }
-        globalArgs.N-=N;
-    }
+   // }
 
 }
