@@ -46,6 +46,9 @@ struct globalArgs_t {
     int style;
 } globalArgs;
 
+void bytes(int fd,off_t N);
+void fbytes(int fd,off_t N);
+
 struct stat sb;
 
 
@@ -132,18 +135,37 @@ int main(int argc, char** argv)
 
     if(*argv){
         for(;fname = *argv++;){
-            int fd = open(fname, O_RDONLY);
-            if (fd == -1 || fstat(fd,&sb)){
-                perror(fname);
-                continue;
+
+            if(strlen(fname)==1 && fname[0]=='-'){
+                if(argc>1){
+                    errno=E2BIG;
+                    perror("Error");
+                    exit(errno);
+                }
+                if((argc > 1 && globalArgs.name != 'q') || (globalArgs.name == 'v')){
+                    write(1,"\n==>",4);
+                    write(1,"stdin",5);
+                    write(1,"<==\n",4);
+                }
+                fd=0;
+                print_tail(fd);
+                write(1,"\n",1);
+            } else {
+
+                int fd = open(fname, O_RDONLY);
+                if (fd == -1 || fstat(fd,&sb)){
+                    perror(fname);
+                    continue;
+                }
+
+                if((argc > 1 && globalArgs.name != 'q') || (globalArgs.name == 'v')){
+                    write(1,"\n==>",4);
+                    write(1,fname,strlen(fname));
+                    write(1,"<==\n",4);
+                }
+                print_tail(fd);
+                close(fd);
             }
-            if((argc > 1 && globalArgs.name != 'q') || (globalArgs.name == 'v')){
-                write(1,"\n==>",4);
-                write(1,fname,strlen(fname));
-                write(1,"<==\n",4);
-            }
-            print_tail(fd);
-            close(fd);
         }
     } else {
         errno=EXIT_FAILURE;
@@ -163,7 +185,7 @@ int main(int argc, char** argv)
 #define readchar(fd, b, n){     \
     int e;                      \
     e = read(fd,b,n);           \
-    if(!(e>0)){                 \
+    if(!(e>=0)){                 \
         errno=EXIT_FAILURE;     \
         perror("Read error");   \
         return;                 \
@@ -190,12 +212,14 @@ void print_tail(int fd){
             /*if the file size is less than N, then print a fully.*/
             if (sb.st_size < globalArgs.N)
                 globalArgs.N = sb.st_size;
-
             if (lseek(fd,0,SEEK_SET)==-1){
                 errno=EXIT_FAILURE;
                 perror("Read error");
                 return;
             }
+        } else {
+            fbytes(fd,globalArgs.N);
+            return;
         }
         break;
     case (-'b'):
@@ -210,6 +234,9 @@ void print_tail(int fd){
                 perror("Read error");
                 return;
             }
+        } else {
+            bytes(fd,globalArgs.N);
+            return;
         }
         break;
     case 'l':
@@ -228,7 +255,6 @@ void print_tail(int fd){
         }
         globalArgs.N=newN;
         }
-
         if (lseek(fd,0,SEEK_SET)==-1){
                 errno=EXIT_FAILURE;
                 perror("Read error");
@@ -236,8 +262,6 @@ void print_tail(int fd){
         }
         break;
     case (-'l'):
-
-
         /*Check that the file is regular*/
         if (S_ISREG(sb.st_mode)) {
             register off_t size = sb.st_size;
@@ -272,13 +296,9 @@ void print_tail(int fd){
 
         }
 
-       printf("-l");
-
         break;
     }
     /*Print byte*/
-   // if(globalArgs.style == 'b' ||
-   // globalArgs.style == -'b'){
         while(globalArgs.N>0){
             int N = LENGTH_BUFFER;
 
@@ -292,3 +312,63 @@ void print_tail(int fd){
    // }
 
 }
+
+void bytes(int fd,off_t N){
+    char *sp;
+    register char *p, *ep;
+    register int len;
+    int w;
+    if ((sp = p = malloc(N) ) == NULL)
+        err(1,"%s",strerror(errno));
+    if(read(STDIN_FILENO,ch,1)<=0)
+        return;
+    for(w = 0, ep = p + N;ch[0]!=EOF;){
+        *p = *ch;
+        if(++p == ep){
+            w = 1;
+            p = sp;
+        }
+        if(read(STDIN_FILENO,ch,1)<=0)
+            break;
+    }
+
+    if(w && (len = ep -p+1))
+        if(write(STDOUT_FILENO, p,len) != len)
+            err(1,"stdout: %s",strerror(errno));
+    if(len=p-sp+1)
+       // printf("%d %d\n",len,N);
+        if(write(STDOUT_FILENO, sp,len) != len)
+            err(1,"stdout: %s",strerror(errno));
+}
+
+void fbytes(int fd,off_t N){
+    char *sp;
+    register char *p, *ep;
+    register int len;
+    int w=0;
+
+    if ((sp = p = malloc(N) ) == NULL)
+        err(1,"%s",strerror(errno));
+    if(read(STDIN_FILENO,ch,1)<=0)
+        return;
+    for(w = 0, ep = p + N;*ch!=EOF;){
+        if(w<N){
+            *p = *ch;
+            p++;
+        }
+        readchar(STDIN_FILENO,ch,1);
+          //  break;
+        printf("%cW\n",ch[0]);
+        fflush(stdout);
+        w++;
+    }
+
+    if(w && (len = ep -p+1))
+        if(write(STDOUT_FILENO, p,len) != len)
+            err(1,"stdout: %s",strerror(errno));
+    if(len=p-sp+1)
+       // printf("%d %d\n",len,N);
+        if(write(STDOUT_FILENO, sp,len) != len)
+            err(1,"stdout: %s",strerror(errno));
+}
+

@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1494757804 source:/home/stud/Desktop/SPO/lab_c/tail/main.c
+1494772910 source:/home/stud/Desktop/SPO/lab_c/tail/main.c
 	<stdio.h>
 	<stdlib.h>
 	<sys/fcntl.h>
