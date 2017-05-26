@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include <sys/fcntl.h>
 #include <sys/types.h>
@@ -9,7 +8,6 @@
 
 #include <unistd.h>
 #include <errno.h>
-#include <getopt.h>
 #include "err_message.h"
 
 
@@ -137,14 +135,17 @@ int main(int argc, char** argv)
 
     if(*argv){
         for(;fname = *argv++;){
+
             if(strlen(fname)==1 && fname[0]=='-'){
                 if(argc>1){
                     errno=E2BIG;
                     perror("Error");
                     exit(errno);
                 }
-                if((globalArgs.name != 'q') || (globalArgs.name == 'v')){
-                    write(1,"\n==>stdin<==\n",13);
+                if((argc > 1 && globalArgs.name != 'q') || (globalArgs.name == 'v')){
+                    write(1,"\n==>",4);
+                    write(1,"stdin",5);
+                    write(1,"<==\n",4);
                 }
                 fd=0;
                 print_tail(fd);
@@ -171,6 +172,13 @@ int main(int argc, char** argv)
         perror(missedname);
         exit(errno);
     }
+  /*  printf("type: %d\nN: %d\nNumfile: %d\nname: %d\n",globalArgs.type,
+    //globalArgs.N, globalArgs.numInputFiles,globalArgs.name);
+
+
+
+    //file_des = file_open(file_name);*/
+
     return 0;
 }
 
