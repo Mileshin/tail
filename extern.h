@@ -20,17 +20,17 @@
 #define NO_ARG "No arguments!"
 
 
-/*error open file*/
+/*error open file
 #define ERR_OPEN "Failed to open file."
 #define ERR_NO_FILE "File does not exist."
 #define ERR_MANY_FILES "Too many open files."
 #define ERR_ACCES "Denial of access."
 #define ERR_INVACC "Invalid access code."
-
+*/
 #define LENGTH_BUFFER 1024
 #define number_row 10
 #define SIZE_T_MAX (~(size_t)0)
-
+#define EOF (-1)
 #define readchar(fd, b, n){     \
     int e;                      \
     e = read(fd,b,n);           \
@@ -62,7 +62,6 @@ struct globalArgs_t {
 
 
 struct stat sb;
-
 
 
 char ch;

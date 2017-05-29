@@ -156,7 +156,6 @@ void print_tail(int fd){
             /*if the file size is less than N, then print a fully.*/
             if ((unsigned int)sb.st_size < NN)
                 NN = sb.st_size;
-
             if (lseek(fd,-NN,SEEK_END)==-1){
                 errno=EXIT_FAILURE;
                 perror("Read error");
@@ -178,11 +177,10 @@ void print_tail(int fd){
                 newN++;
                 if(ch == '\n' && !--NN){
                     break;
-                }
+	        }
             }
         }
         NN=newN;
-       
         if (lseek(fd,0,SEEK_SET)==-1){
                 errno=EXIT_FAILURE;
                 perror("Read error");
@@ -232,6 +230,9 @@ void print_tail(int fd){
         break;
     }
     /*Print byte*/
+	//NN=globalArgs.N;
+	 NN = (NN>(size_t) sb.st_size) ? (size_t) sb.st_size : NN ;
+//printf("%d\n",NN);
         while(NN>0){
             int N = LENGTH_BUFFER;
 

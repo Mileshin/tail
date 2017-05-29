@@ -1,5 +1,6 @@
 #include "extern.h"
 #include "readlines.h"
+/*display the last offset lines of stdin*/
 void lines(off_t N){
 	struct {
 		unsigned int blen;
@@ -9,7 +10,6 @@ void lines(off_t N){
 	register char *p;
 	unsigned int blen, cnt, recno, w;
 	char *sp;
-
 	if ((lines = malloc(N * sizeof(*lines))) == NULL)
 		err(1, "%s", strerror(errno));
 
@@ -33,22 +33,17 @@ void lines(off_t N){
 					err(1, "%s", strerror(errno));
 			}
 			bcopy(sp, lines[recno].l, lines[recno].len = cnt);
-			cnt = 0;
-			p = sp;
-			if (++recno == N) {
-				w = 1;
-				recno = 0;
-			}
+			cnt = 0,p = sp;
+			if (++recno == N) 
+				w = 1,recno = 0;
 		}
 		if(read(STDIN_FILENO,&ch,1)<=0)
 			break;
 	}
 	if (cnt) {
-		lines[recno].l = sp;
-		lines[recno].len = cnt;
+		lines[recno].l = sp, lines[recno].len = cnt;
 		if (++recno == N) {
-			w = 1;
-			recno = 0;
+			w = 1,recno = 0;
 		}
 	}
 	
@@ -56,8 +51,7 @@ void lines(off_t N){
      		write(1,"\n==>stdin<==\n",13);
 	else
    		write(STDOUT_FILENO,"\n",1);
-	if (w)
-	for (cnt = recno; cnt < N; ++cnt)
+	for (cnt = recno; (w && cnt < N); ++cnt)
 		if(write(STDOUT_FILENO,lines[cnt].l, 
 		  lines[cnt].len)!= lines[cnt].len)
 			err(1,"stdout: %s",strerror(errno));
@@ -72,6 +66,7 @@ void lines(off_t N){
 
 
 
+/*display the forvard offset lines of stdin*/
 void flines(off_t N){
 	struct {
 		unsigned int blen;
@@ -106,11 +101,9 @@ void flines(off_t N){
 					err(1, "%s", strerror(errno));
 			}
 			bcopy(sp, lines[recno].l, lines[recno].len = cnt);
-			cnt = 0;
-			p = sp;
+			cnt = 0,p = sp;
 			if (++recno == N) {
-				w = 1;
-				recno = 0;
+				w = 1,recno = 0;
 			}
 		}
 		}
@@ -118,20 +111,16 @@ void flines(off_t N){
 			break;
 	}
 	if (cnt) {
-		lines[recno].l = sp;
-		lines[recno].len = cnt;
-		if (++recno == N) {
-			w = 1;
-			recno = 0;
-		}
+		lines[recno].l = sp,lines[recno].len = cnt;
+		if (++recno == N) 
+			w = 1,recno = 0;
 	}
 	
 	if((globalArgs.name == 'v'))      
      		write(1,"\n==>stdin<==\n",13);
 	else
    		write(STDOUT_FILENO,"\n",1);
-	if (w)
-	for (cnt = recno; cnt < N; ++cnt)
+	for (cnt = recno; (w && cnt < N); ++cnt)
 		if(write(STDOUT_FILENO,lines[cnt].l, 
 		  lines[cnt].len)!= lines[cnt].len)
 			err(1,"stdout: %s",strerror(errno));
