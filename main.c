@@ -2,7 +2,7 @@
 #include "readbytes.h"
 
 static const char *optString ="b:c:n:qv";
-static const char *usage = "usage: tail [-n # | -c #] [-q | -v] [file ...]\n";
+static const char *usage = "usage: tail [-n # | -c # | -b #] [-q | -v] [file ...]\n";
 static const char *missedname ="Missing namefile";
 
 #define get_arg(units,type){                        \
@@ -19,6 +19,7 @@ static const char *missedname ="Missing namefile";
             break;                                  \
         case '-':                                   \
             globalArgs.N=-globalArgs.N;             \
+	    /*Ignore this warning. Fallthrough*/    \
         default:                                    \
             globalArgs.style = -(type);             \
             break;                                  \
@@ -77,7 +78,7 @@ int main(int argc, char** argv)
                 get_arg(1,'l');
                 break;
             case 'b':
-                get_arg(512,'c');
+                get_arg(512,'b');
                 break;
             case '?':
                 errno=EINVAL;
